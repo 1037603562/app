@@ -47,8 +47,119 @@ import router from './router.js'
 // import VueResource from 'vue-resource'
 // Vue.use(VueResource)//安装vue-resource
 
+//注册vuex
+import Vuex from 'vuex'
+Vue.use(Vuex)
+
+//没错刚进入网址 肯定会调用main.js 在岗调用的时候 先从本地存储中吧购物车中的数据读出来放到store中
+var car=JSON.parse(localStorage.getItem('car')|| '[]')
+
+
+var store= new Vuex.Store({
+   state:{//this.$store.state.***
+     car:car//将购物车中的商品数据用这个数字存储起来，在car数 组当中存储一些商品对象，
+   },
+   mutations:{//this.$store.commit('方法名称'，‘按需传递唯一的参数 ’)
+        //定义一个方法用于 将  要保存到state中的商品信息对象 保存到state里面去
+        addToCar(state,goodsinfo){//即点击加入购物车 吧商品信息保存到store的car里面
+          
+          //假设在购物车当中没有找到对应的商品
+          var flag=false
+          
+          state.car.some(item => {
+            if(item.id==goodsinfo.id){
+           item.count+=parseInt(goodsinfo.count)
+              flag=true
+              return true//用于终止some循环
+            }
+          })
+
+
+          if(!flag){
+            state.car.push(goodsinfo)
+          }
+          //将更新的car数组存储到本地的localStorage中
+          localStorage.setItem('car',JSON.stringify(state.car))
+
+
+        },
+        updateGoodsInfo(state,goodsinfo){//修改购物车中的商品额数量值
+            state.car.some(item=>{
+              if(item.id== goodsinfo.id){
+                item.count=parseInt(goodsinfo.count)
+                return true
+              }
+            }) 
+            //当修改完商品的数量 吧最新的购物车数据保存到本地存储当中
+            localStorage.setItem('car',JSON.stringify(state.car))
+        },
+        removeFromCar(state,id){
+          //根据id从store中的购物车中删除对应的那条商品数据
+          state.car.some((item,i)=>{
+            if(item.id==id){
+                state.car.splice(i,1)
+                  return true;
+              }
+          })
+          //将删除完毕的最新的购物车数据同步到本地存储中
+          localStorage.setItem('car',JSON.stringify(state.car))
+        },
+        updateGoodsSelected(state,info){
+          state.car.some(item=>{
+            if(item.id==info.id){
+              item.selected=info.selected
+            }
+          })
+          //把最新的所有购物车商品的状态保存到store中
+          localStorage.setItem('car',JSON.stringify(state.car))
+        }
+   },
+   getters:{//this.$store.getters.***
+    getAllCount(state){
+      var c=0;
+      state.car.forEach(item => {
+        c+=item.count
+      })
+      return c
+    },
+    getGoodsCount(state){
+      var o={}
+      state.car.forEach(item=>{
+        o[item.id]=item.count
+      })
+      return o
+    },
+    getGoodsSelected(state){
+      var o={}
+      state.car.forEach(item=>{
+        o[item.id] = item.selected
+      })
+      return o
+    },
+    getGoodsCountAndAmount(state){
+      var o={
+        count:0,//勾选的数量
+        amount:0//勾选的总价
+      }
+      state.car.forEach(item=>{
+        if(item.selected==true){
+          // o.count+=item.count
+          o.count=o.count+item.count
+          o.amount+=item.price * item.count
+        }
+      })
+      return o
+    }
+
+   }
+})
+
+
+
+
 var ve=new Vue({
   el:'#app',
   render:c => c(app),
-  router//挂载路由对象 
+  router,//挂载路由对象 
+  store//挂载store 状态管理对象
 })
